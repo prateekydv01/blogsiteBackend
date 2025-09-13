@@ -106,25 +106,32 @@ export const loginUser = asyncHandler(async (req, res) => {
 });
 
 
-export const logout = asyncHandler(async(req,res)=>{
-    const user =  await User.findById(req.user._id)
+export const logout = asyncHandler(async (req, res) => {
+    // Make sure JWT middleware ran before this
+    const user = await User.findById(req.user._id);
     if (!user) {
-        return res.status(404).json({ message: "User not found" });
+        throw new ApiError(404, "User not found");
     }
-    user.refreshToken = undefined; 
-    await user.save();
 
+    // Remove refresh token from DB
+    user.refreshToken = undefined;
+    await user.save({ validateBeforeSave: false });
+
+    // Cookie options must match the ones used for setting cookies
     const options = {
-    httpOnly : true,
-    secure:process.env.NODE_ENV === "production"
-    }
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "Strict", // ensures proper cross-site behavior
+        path: "/",          // must match the original path
+    };
 
     return res
-    .status(200)
-    .clearCookie("accessToken",options)
-    .clearCookie("refreshToken",options)
-    .json(new ApiResponse(200,{},"User logged out successfully ! "))
-})
+        .status(200)
+        .clearCookie("accessToken", options)
+        .clearCookie("refreshToken", options)
+        .json(new ApiResponse(200, {}, "User logged out successfully!"));
+});
+
 
 export const getCurrentUser = asyncHandler(async(req,res)=>{
     return res.status(200).json(new ApiResponse(200, req.user , "current user details"))
