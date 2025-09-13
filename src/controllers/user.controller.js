@@ -37,8 +37,8 @@ export const createUser = asyncHandler(async (req, res) => {
 
     const cookieOptions = {
         httpOnly: true,
-        secure: isProduction,
-        sameSite: isProduction ? "none" : "lax", // same as loginUser
+        secure: true,
+        sameSite:"none", // same as loginUser
         path: "/",                              // ensures cookie works on all paths
     };
 
@@ -94,8 +94,8 @@ export const loginUser = asyncHandler(async (req, res) => {
 
     const cookieOptions = {
         httpOnly: true,
-        secure: isProduction,       // true only in production
-        sameSite: isProduction ? "none" : "lax" // 'none' for cross-site cookies in prod
+        secure:true,       // true only in production
+        sameSite: "none" // 'none' for cross-site cookies in prod
     };
 
     return res
