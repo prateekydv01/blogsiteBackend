@@ -122,7 +122,7 @@ export const logout = asyncHandler(async (req, res) => {
     const options = {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
-        sameSite: "Strict", // ensures proper cross-site behavior
+        sameSite: "none", // ensures proper cross-site behavior
         path: "/",          // must match the original path
     };
 
