@@ -95,7 +95,8 @@ export const loginUser = asyncHandler(async (req, res) => {
     const cookieOptions = {
         httpOnly: true,
         secure:true,       // true only in production
-        sameSite: "none" // 'none' for cross-site cookies in prod
+        sameSite: "none" ,// 'none' for cross-site cookies in prod
+        path: "/" 
     };
 
     return res
@@ -156,7 +157,9 @@ export const updateAcessToken = asyncHandler(async(req,res)=>{
         
         const options = {
             httpOnly: true,
-            secure:process.env.NODE_ENV==="production"
+            secure:true,
+            ameSite: "none",  // enables cross-site cookies
+            path: "/" 
         }
 
         const {accessToken,refreshToken} =await generateAccessAndRefreshToken(user._id)
