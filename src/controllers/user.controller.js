@@ -69,43 +69,42 @@ const generateAccessAndRefreshToken  = async (userId)=>{
     }
 }
 
-export const loginUser = asyncHandler(async(req,res)=>{
-    const {email,password} =req.body
+export const loginUser = asyncHandler(async (req, res) => {
+    const { email, password } = req.body;
 
-    if(!email || !password){
-        throw new ApiError(400,"email and password are required")
+    if (!email || !password) {
+        throw new ApiError(400, "Email and password are required");
     }
 
-    const user = await User.findOne({email})
-    if(!user){
-        throw new ApiError(404,"user not found with this email id !")
+    const user = await User.findOne({ email });
+    if (!user) {
+        throw new ApiError(404, "User not found with this email id!");
     }
 
     if (user.password !== password) {
-    throw new ApiError(402, "Incorrect password");
-    } 
+        throw new ApiError(402, "Incorrect password");
+    }
 
+    const { accessToken, refreshToken } = await generateAccessAndRefreshToken(user._id);
 
-    const {accessToken,refreshToken} = await generateAccessAndRefreshToken(user._id)
+    const loggedInUser = await User.findById(user._id).select("-password -refreshToken");
 
-    const loggedInUser = await User.findById(user._id).select(
-        "-password -refreshToken"
-    )
+    // Detect environment
+    const isProduction = process.env.NODE_ENV === "production";
 
-    const options = {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production"
+    const cookieOptions = {
+        httpOnly: true,
+        secure: isProduction,       // true only in production
+        sameSite: isProduction ? "none" : "lax" // 'none' for cross-site cookies in prod
     };
 
     return res
-    .status(200)
-    .cookie("accessToken",accessToken,options)
-    .cookie("refreshToken",refreshToken,options)
-    .json(new ApiResponse(200,
-        loggedInUser,
-        "user logged in successfully"))
+        .status(200)
+        .cookie("accessToken", accessToken, cookieOptions)
+        .cookie("refreshToken", refreshToken, cookieOptions)
+        .json(new ApiResponse(200, loggedInUser, "User logged in successfully"));
+});
 
-})
 
 export const logout = asyncHandler(async(req,res)=>{
     const user =  await User.findById(req.user._id)
