@@ -121,7 +121,7 @@ export const logout = asyncHandler(async (req, res) => {
     // Cookie options must match the ones used for setting cookies
     const options = {
         httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
+        secure:true,
         sameSite: "none", // ensures proper cross-site behavior
         path: "/",          // must match the original path
     };
