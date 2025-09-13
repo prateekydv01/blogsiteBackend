@@ -5,51 +5,51 @@ import {ApiError} from "../utils/ApiError.js"
 import jwt from "jsonwebtoken";
 
 
-export const createUser = asyncHandler(async(req,res)=>{
-    const{username,email,password,fullname}=req.body
+export const createUser = asyncHandler(async (req, res) => {
+    const { username, email, password, fullname } = req.body;
 
-    if(!username || !email ||!password||!fullname){
-        throw new ApiError(401,"All fields are mandatory!")
+    if (!username || !email || !password || !fullname) {
+        throw new ApiError(400, "All fields are mandatory!");
     }
 
-    const existingUser = await User.findOne(
-        {$or:[{username},{email}]}
-    )
+    const existingUser = await User.findOne({
+        $or: [{ username: username.toLowerCase() }, { email }],
+    });
 
-    if (existingUser){
-        throw new ApiError(409,"user with this email or username already exists!")
+    if (existingUser) {
+        throw new ApiError(409, "User with this email or username already exists!");
     }
-    try {
-        const user = await User.create({
-            fullname,
-            email,
-            username:username.toLowerCase(),
-            password
-        })
 
-        const { accessToken, refreshToken } = await generateAccessAndRefreshToken(user._id);
+    const user = await User.create({
+        fullname,
+        email,
+        username: username.toLowerCase(),
+        password,
+    });
 
-        const options = {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === "production"
-        };
-
-        const createdUser = await User.findById(user._id).select(
-            "-password -refreshToken"
-        )
-        if(!createdUser){
-         throw new ApiError(500,"Something went wrong while registering a user !")
-        }
-
-        return res
-        .status(200)
-        .cookie("accessToken", accessToken, options)
-        .cookie("refreshToken", refreshToken, options)
-        .json(new ApiResponse(200,createdUser,"user created successfully !"))
-    } catch (error) {
-        throw new ApiError(404,"error while creating user")
+    if (!user) {
+        throw new ApiError(500, "Something went wrong while registering the user!");
     }
-})
+
+    const { accessToken, refreshToken } = await generateAccessAndRefreshToken(user._id);
+
+    const isProduction = process.env.NODE_ENV === "production";
+
+    const cookieOptions = {
+        httpOnly: true,
+        secure: isProduction,
+        sameSite: isProduction ? "none" : "lax", // same as loginUser
+        path: "/",                              // ensures cookie works on all paths
+    };
+
+    const createdUser = await User.findById(user._id).select("-password -refreshToken");
+
+    return res
+        .status(201)
+        .cookie("accessToken", accessToken, cookieOptions)
+        .cookie("refreshToken", refreshToken, cookieOptions)
+        .json(new ApiResponse(201, createdUser, "User created successfully!"));
+});
 
 const generateAccessAndRefreshToken  = async (userId)=>{
     try {
